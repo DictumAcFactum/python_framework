@@ -16,3 +16,8 @@ def about(request, response):
 def say_hello(request, response, name):
 	response.text = f"Hello, {name}"
 
+
+@app.route("/{author}/{book}")
+class BookHandler:
+	def get(self, request, response, author, book):
+		response.text = f"{book} is written by {author}"
