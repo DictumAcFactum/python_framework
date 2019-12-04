@@ -27,12 +27,20 @@ class API:
 		
 		return response
 
+
 	def route(self, path):
 		def wrapper(handler):
-			self.routes[path] = handler
+			self.add_route(path, handler)
 			return handler
 
 		return wrapper
+
+
+	def add_route(self, path, handler):
+		assert path not in self.routes, "Such route already exists."
+
+		self.routes[path] = handler
+
 
 	def default_response(self, response):
 		response.status_code = 404
