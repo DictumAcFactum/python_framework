@@ -2,6 +2,12 @@ from api import API
 
 app = API()
 
+
+def custom_exceptions_handler(request, response, exception_cls):
+	response.text = "Oops! Something went wrong."
+
+app.add_exception_handler(custom_exceptions_handler)
+
 @app.route("/home")
 def home(request, response):
 	response.text = "Hello from HOME page"
@@ -25,5 +31,5 @@ class BookHandler:
 
 @app.route("/template")
 def template_handler(request, response):
-	response.body = app.template("index.html", context={'title': 'Best framework',
-														'name': 'Django-killer'}).encode()
+	response.body = app.template("index.html", 
+		context={'title': 'Best framework','name': 'Django-killer'}).encode()
