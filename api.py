@@ -3,30 +3,47 @@ from parse import parse
 from requests import Session as RequestsSession
 from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
 from jinja2 import Environment, FileSystemLoader
+from whitenoise import WhiteNoise 
 
 import os
 import inspect
 
+
 class API:
-	def __init__(self, templates_dir="templates"):
+	def __init__(self, templates_dir="templates", static_dir="static"):
 		# self.routes - dict for paths our application
 		# self.templates_env - directory for html templates
 		# self.exception_handler - default exception handler
+		# self.whitenoise - static file serving class. Wraps an WSGI-application
+
 		self.routes = {}
 		self.templates_env = Environment(loader=FileSystemLoader(os.path.abspath(templates_dir)))
 		self.exception_handler = None
+		self.whitenoise = WhiteNoise(self.wsgi_app, root=static_dir)
 
 
 	def __call__(self, environ, start_response):
+		return self.whitenoise(environ, start_response)
+
+	
+	def wsgi_app(self, environ, start_response):
+		"""
+		environ: a dictionary with environment variables
+		start_response:  a callback function that will be used to send 
+		                 HTTP status and HTTP headers to the server
+		"""
+
 		request = Request(environ)
 
 		response = self.handle_request(request)
 
 		return response(environ, start_response)
 
+
 	def handle_request(self, request):
 		response = Response()
 
+		# kwargs - parsed arguments
 		handler, kwargs = self.find_handler(request_path=request.path)
 
 		try:
@@ -53,6 +70,7 @@ class API:
 
 
 	def route(self, path):
+		# decorator for application handlers
 		def wrapper(handler):
 			self.add_route(path, handler)
 			return handler
@@ -96,3 +114,4 @@ class API:
 
 	def add_exception_handler(self, exception_handler):
 		self.exception_handler = exception_handler
+		
