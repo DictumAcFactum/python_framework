@@ -4,6 +4,7 @@ from requests import Session as RequestsSession
 from wsgiadapter import WSGIAdapter as RequestsWSGIAdapter
 from jinja2 import Environment, FileSystemLoader
 from whitenoise import WhiteNoise 
+from middleware import Middleware 
 
 import os
 import inspect
@@ -11,19 +12,33 @@ import inspect
 
 class API:
 	def __init__(self, templates_dir="templates", static_dir="static"):
-		# self.routes - dict for paths our application
+		# self.routes - dict for paths our app
 		# self.templates_env - directory for html templates
 		# self.exception_handler - default exception handler
-		# self.whitenoise - static file serving class. Wraps an WSGI-application
+		# self.whitenoise - static file serving class. Wraps an WSGI our app
+		# self.middleware - it's a wrapper around our WSGI app that have the ability to modify requests and responses
 
 		self.routes = {}
 		self.templates_env = Environment(loader=FileSystemLoader(os.path.abspath(templates_dir)))
 		self.exception_handler = None
 		self.whitenoise = WhiteNoise(self.wsgi_app, root=static_dir)
+		self.middleware = Middleware(self)
 
 
 	def __call__(self, environ, start_response):
-		return self.whitenoise(environ, start_response)
+		path_info = environ['PATH_INFO']
+
+		# static file request case
+		if path_info.startswith("/static"):
+			# cut the "/static" prefix:
+			# instead of - http://localhost:8000/static/main.css
+			# it will be - http://localhost:8000/main.css 
+			environ['PATH_INFO'] = path_info[len("/static"):]
+			return self.whitenoise(environ, start_response)
+
+		# If not static file request
+		# We are delegating the job of being an entrypoint to the middleware now
+		return self.middleware(environ, start_response)
 
 	
 	def wsgi_app(self, environ, start_response):
@@ -34,9 +49,7 @@ class API:
 		"""
 
 		request = Request(environ)
-
 		response = self.handle_request(request)
-
 		return response(environ, start_response)
 
 
@@ -114,4 +127,8 @@ class API:
 
 	def add_exception_handler(self, exception_handler):
 		self.exception_handler = exception_handler
+		
+
+	def add_middleware(self, middleware_cls):
+		self.middleware.add(middleware_cls)
 		

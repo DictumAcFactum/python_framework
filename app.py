@@ -1,6 +1,20 @@
 from api import API
+from middleware import Middleware 
+
 
 app = API()
+
+
+class SimpleCustomMiddleware(Middleware):
+	def process_request(self, request):
+		print("Processing request", request.url)
+
+
+	def process_response(self, request, response):
+		print("Processing response", request.url)
+
+
+app.add_middleware(SimpleCustomMiddleware)
 
 
 def custom_exceptions_handler(request, response, exception_cls):
@@ -33,3 +47,4 @@ class BookHandler:
 def template_handler(request, response):
 	response.body = app.template("index.html", 
 		context={'title': 'Best framework','name': 'Django-killer'}).encode()
+	
