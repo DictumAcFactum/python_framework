@@ -1,1 +1,5 @@
-Python framework for learning purposes.
+# Python framework for learning purposes.
+
+# Launch
+
+`gunicorn app:app`
